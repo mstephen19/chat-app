@@ -1,6 +1,9 @@
 version: '3.8'
 
 services:
+    redis:
+        container_name: 'redis'
+        image: redis
     server:
         container_name: 'server'
         build:
@@ -11,6 +14,10 @@ services:
         # Only for development purposes.
         volumes:
             - './server:/usr/src/app:ro'
+        # Only start the server's container after
+        # Redis has started.
+        depends_on:
+            - redis
     client:
         container_name: 'client'
         build:
@@ -20,3 +27,5 @@ services:
         volumes:
             - './client/pages:/app/pages:ro'
             - '/app/node_modules'
+        depends_on:
+            - server
