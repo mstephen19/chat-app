@@ -10,8 +10,8 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	redisLib "github.com/mstephen19/chat-app-redis/redis"
-	sse "github.com/mstephen19/chat-app-redis/sse"
+	db "github.com/mstephen19/chat-app-redis/db"
+	utils "github.com/mstephen19/chat-app-redis/utils"
 )
 
 type Message struct {
@@ -24,17 +24,15 @@ type JsonMessage struct {
 }
 
 func main() {
-	// Connect to Redis
-	rdb, err := redisLib.Connect()
+	redisClient, err := db.ConnectRedis()
 	if err != nil {
 		panic(err)
 	}
 
 	router := gin.Default()
-
 	router.Use(cors.Default())
 
-	router.GET("/rooms/:id", sse.PrepareSSE, sse.CreateClientDisconnectionChannel, func(ctx *gin.Context) {
+	router.GET("/rooms/:id", utils.PrepareSSE, func(ctx *gin.Context) {
 		// Grab the room ID from the params to be used later.
 		roomId, exists := ctx.Params.Get("id")
 		if !exists {
@@ -44,46 +42,39 @@ func main() {
 			return
 		}
 
-		// Grab hold of the disconnection channel that will notify of disconnection.
-		any, exists := ctx.Get(sse.DisconnectionChannelKey)
-		if !exists {
-			ctx.SecureJSON(http.StatusBadRequest, JsonMessage{
-				Message: "Failed to connect client.",
-			})
-			return
-		}
-		disconnectionChannel, exists := any.(sse.DisconnectionChannel)
-		if !exists {
-			ctx.SecureJSON(http.StatusInternalServerError, JsonMessage{
-				Message: "Failed to connect client.",
-			})
-			return
-		}
 		// Subscribe to the Redis channel for the room's messages
-		subscriber := rdb.Subscribe(context.TODO(), roomId)
+		subscriber := redisClient.Subscribe(context.TODO(), roomId)
 
-		// Start streaming events to the client
+		// Start streaming events to the client.
 		ctx.Stream(func(w io.Writer) bool {
+			// On each iteration, block until either the request has
+			// ended, or a message has been received on the subscriber
+			// channel.
 			select {
-			// If we've disconnected, then stop the stream
-			case msg, ok := <-disconnectionChannel:
-				if !ok || msg == sse.CodeDisconnect {
+			// Client disconnected? End stream and unsubscribe.
+			case <-ctx.Request.Context().Done():
+				// ? does this unsubscribe the entire redis.Client from the roomID events,
+				// ? or just the PubSub? Test this!!!! Log out when unsubscriptions happen,
+				// ? then see if all clients get disconnected or just the subscriber as
+				// ? intended.
+				subscriber.Unsubscribe(context.TODO(), roomId)
+				return false
+			case message, ok := <-subscriber.Channel():
+				// Channel closes, end stream and unsubscribe.
+				if !ok {
+					subscriber.Unsubscribe(context.TODO(), roomId)
 					return false
 				}
-				// Otherwise, listen for messages on the Redis subscriber
-			default:
-				message, err := subscriber.ReceiveMessage(context.TODO())
-				// If any errors occur, simply stop the stream.
-				if err != nil {
-					return false
-				}
+
+				// Otherwise, send the message.
 				ctx.SSEvent("message", message.Payload)
 			}
 			return true
 		})
 	})
 
-	router.POST("/messages/:id", func(ctx *gin.Context) {
+	router.POST("/messages/:id", utils.LimitBodySize(1024*2), func(ctx *gin.Context) {
+		// Get the room ID the message should be posted to
 		roomId, exists := ctx.Params.Get("id")
 		if !exists {
 			ctx.SecureJSON(http.StatusBadRequest, JsonMessage{
@@ -107,7 +98,6 @@ func main() {
 			})
 			return
 		}
-
 		message.Time = time.Now().UnixMilli()
 
 		encoded, err := json.Marshal(&message)
@@ -118,7 +108,7 @@ func main() {
 			return
 		}
 
-		rdb.Publish(context.TODO(), roomId, encoded)
+		redisClient.Publish(context.TODO(), roomId, encoded)
 
 		ctx.SecureJSON(http.StatusOK, JsonMessage{
 			Message: fmt.Sprintf("Sent message to room: %s", roomId),

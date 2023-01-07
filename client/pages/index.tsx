@@ -17,6 +17,7 @@ export default function Home() {
 
             <main className={styles.main}>
                 <form
+                    autoComplete='off'
                     onSubmit={(e) => {
                         e.preventDefault();
                     }}>

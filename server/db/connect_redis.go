@@ -1,4 +1,4 @@
-package redis
+package db
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 
 const PONG = "PONG"
 
-func Connect() (rdb *redis.Client, err error) {
+func ConnectRedis() (rdb *redis.Client, err error) {
 	rdb = redis.NewClient(&redis.Options{
 		// In development, connect via the network
 		// with the container name.
