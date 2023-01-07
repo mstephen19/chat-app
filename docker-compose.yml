@@ -3,3 +3,20 @@ version: '3.8'
 services:
     server:
         container_name: 'server'
+        build:
+            context: './server'
+        ports:
+            - '3001:3001'
+        # The entire folder as a bind mount.
+        # Only for development purposes.
+        volumes:
+            - './server:/usr/src/app:ro'
+    client:
+        container_name: 'client'
+        build:
+            context: './client'
+        ports:
+            - '3000:3000'
+        volumes:
+            - './client/pages:/app/pages:ro'
+            - '/app/node_modules'
