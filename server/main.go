@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	redisLib "github.com/mstephen19/chat-app-redis/redis"
 	sse "github.com/mstephen19/chat-app-redis/sse"
@@ -31,11 +32,12 @@ func main() {
 
 	router := gin.Default()
 
+	router.Use(cors.Default())
+
 	router.GET("/rooms/:id", sse.PrepareSSE, sse.CreateClientDisconnectionChannel, func(ctx *gin.Context) {
 		// Grab the room ID from the params to be used later.
 		roomId, exists := ctx.Params.Get("id")
 		if !exists {
-			fmt.Println("not exist")
 			ctx.SecureJSON(http.StatusBadRequest, JsonMessage{
 				Message: "Room ID not found.",
 			})
@@ -45,7 +47,6 @@ func main() {
 		// Grab hold of the disconnection channel that will notify of disconnection.
 		any, exists := ctx.Get(sse.DisconnectionChannelKey)
 		if !exists {
-			fmt.Println("failed 1")
 			ctx.SecureJSON(http.StatusBadRequest, JsonMessage{
 				Message: "Failed to connect client.",
 			})
@@ -53,7 +54,6 @@ func main() {
 		}
 		disconnectionChannel, exists := any.(sse.DisconnectionChannel)
 		if !exists {
-			fmt.Println("failed 2")
 			ctx.SecureJSON(http.StatusInternalServerError, JsonMessage{
 				Message: "Failed to connect client.",
 			})
@@ -64,18 +64,15 @@ func main() {
 
 		// Start streaming events to the client
 		ctx.Stream(func(w io.Writer) bool {
-			fmt.Println("here")
 			select {
 			// If we've disconnected, then stop the stream
 			case msg, ok := <-disconnectionChannel:
 				if !ok || msg == sse.CodeDisconnect {
-					fmt.Println("disconn")
 					return false
 				}
 				// Otherwise, listen for messages on the Redis subscriber
 			default:
 				message, err := subscriber.ReceiveMessage(context.TODO())
-				fmt.Println("msg received")
 				// If any errors occur, simply stop the stream.
 				if err != nil {
 					return false

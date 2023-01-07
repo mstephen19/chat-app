@@ -1,8 +1,6 @@
 package see
 
 import (
-	"fmt"
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -29,12 +27,10 @@ func PrepareSSE(ctx *gin.Context) {
 // notifying that the client has disconnected. Creates a channel
 // and attaches it to the context.
 func CreateClientDisconnectionChannel(ctx *gin.Context) {
-	fmt.Println("Connected")
 	disconnectionChannel := make(DisconnectionChannel)
 	ctx.Set(DisconnectionChannelKey, disconnectionChannel)
 
 	defer func() {
-		fmt.Println("Disconnected")
 		disconnectionChannel <- CodeDisconnect
 		close(disconnectionChannel)
 	}()
