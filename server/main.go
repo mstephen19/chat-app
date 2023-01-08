@@ -62,10 +62,6 @@ func main() {
 			return
 		}
 
-		// ! publish a message on the channel after the
-		// ! user has connected. Then, do the same thing for when the
-		// ! user has disconnected.
-		// ? Do something very similar for disconnection
 		joinEvent, err := json.Marshal(Message{
 			Type:     UserJoinEvent,
 			SenderId: userId,
