@@ -14,7 +14,14 @@ import (
 	utils "github.com/mstephen19/chat-app-redis/utils"
 )
 
+const (
+	MessageEvent   = "message"
+	UserJoinEvent  = "user_join"
+	UserLeaveEvent = "user_leave"
+)
+
 type Message struct {
+	Type     string `json:"message_type"`
 	SenderId string `json:"sender_id"`
 	Sender   string `json:"sender"`
 	Message  string `json:"message"`
@@ -44,6 +51,34 @@ func main() {
 			return
 		}
 
+		// Credentials must be provided in the query parameters when
+		// making a request for an event stream.
+		userId := ctx.Query("user_id")
+		userName := ctx.Query("user_name")
+		if userId == "" || userName == "" {
+			ctx.SecureJSON(http.StatusBadRequest, JsonMessage{
+				Message: "Invalid credentials.",
+			})
+			return
+		}
+
+		// ! publish a message on the channel after the
+		// ! user has connected. Then, do the same thing for when the
+		// ! user has disconnected.
+		// ? Do something very similar for disconnection
+		joinEvent, err := json.Marshal(Message{
+			Type:     UserJoinEvent,
+			SenderId: userId,
+			Sender:   userName,
+		})
+		if err != nil {
+			ctx.SecureJSON(http.StatusInternalServerError, JsonMessage{
+				Message: "Failed to connect.",
+			})
+			return
+		}
+		redisClient.Publish(context.TODO(), roomId, joinEvent)
+
 		// Subscribe to the Redis channel for the room's messages
 		subscriber := redisClient.Subscribe(context.TODO(), roomId)
 
@@ -64,7 +99,6 @@ func main() {
 					return false
 				}
 
-				// Otherwise, send the message.
 				ctx.SSEvent("message", message.Payload)
 			}
 			return true
@@ -97,6 +131,7 @@ func main() {
 			return
 		}
 		message.Time = time.Now().UnixMilli()
+		message.Type = MessageEvent
 
 		encoded, err := json.Marshal(&message)
 		if err != nil {
@@ -105,6 +140,7 @@ func main() {
 			})
 			return
 		}
+		fmt.Println(string(encoded))
 
 		redisClient.Publish(context.TODO(), roomId, encoded)
 

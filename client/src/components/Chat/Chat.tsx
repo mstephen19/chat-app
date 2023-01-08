@@ -3,7 +3,8 @@ import { useSelector } from 'react-redux';
 import { Card, CardBody, CardFooter, TextArea, CardHeader, Box, Button, Text, Spinner, Clock } from 'grommet';
 import { LinkPrevious } from 'grommet-icons';
 import { toast } from 'react-hot-toast';
-import { Message } from './Message';
+import Message from './Message';
+import { MessageType } from '../../constants';
 
 import type { ChangeEventHandler, KeyboardEventHandler } from 'react';
 import type { MessageToSend, ReceivedMessage, UserInfo } from '../../types';
@@ -36,7 +37,7 @@ export const Chat = ({ onExit }: ChatProps) => {
         // null/undefined somehow), immediately exit the chat.
         if (Object.values(userInfo).some((val) => !val)) return onExit();
 
-        const stream = new EventSource(`http://localhost:3001/rooms/${userInfo.room}`);
+        const stream = new EventSource(`http://localhost:3001/rooms/${userInfo.room}?user_id=${userInfo.id}&user_name=${userInfo.name}`);
 
         const handleOpen = () => {
             setConnecting(false);
@@ -45,15 +46,23 @@ export const Chat = ({ onExit }: ChatProps) => {
         stream.addEventListener('open', handleOpen);
 
         const handleMessage = (e: MessageEvent<string>) => {
-            // Later on, there can be different message types such as
-            // user_join and user_leave
-            if (e.type !== 'message') return;
             const data = JSON.parse(e.data) as ReceivedMessage;
-            setMessages((prev) => {
-                // ! Later on, limit the max size of the message list to be
-                // ! only 50 messages!
-                return [...prev, data];
-            });
+
+            switch (data.message_type) {
+                case MessageType.Message: {
+                    setMessages((prev) => {
+                        // ! Later on, limit the max size of the message list to be
+                        // ! only 50 messages!
+                        return [...prev, data];
+                    });
+                    break;
+                }
+                case MessageType.UserJoin: {
+                    console.log('success');
+                    console.log(data);
+                    break;
+                }
+            }
         };
         stream.addEventListener('message', handleMessage);
 
@@ -104,17 +113,17 @@ export const Chat = ({ onExit }: ChatProps) => {
         <Card
             elevation='xlarge'
             background='grey'
-            width={{ width: 'medium', min: 'xsmall', max: 'xlarge' }}
+            width='clamp(200px, 75vw, 750px)'
             height={{ height: 'medium', min: 'small', max: 'medium' }}>
             <CardHeader flex justify='center' align='center' height={{ max: '50px' }}>
                 <Box direction='row' width='20%'>
                     <Button color='white' icon={<LinkPrevious color='white' rotate='180deg' />} size='small' onClick={onExit} />
                 </Box>
                 <Box direction='row' justify='center' align='center' width='80%' gap='20px'>
-                    <Text weight='bold'>Current room:</Text>
+                    <Text weight='bold'>Room:</Text>
                     <Text>{userInfo.room}</Text>
                 </Box>
-                <Box direction='row' width='20%'>
+                <Box direction='row' width='20%' justify='center' align='center'>
                     <Clock size='xsmall' precision='minutes' type='digital' hourLimit={12} />
                 </Box>
             </CardHeader>

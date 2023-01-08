@@ -1,3 +1,5 @@
+import type { MessageType } from '../constants';
+
 export type MessageToSend = {
     /**
      * A unique client-generated ID.
@@ -19,6 +21,7 @@ export type ReceivedMessage = MessageToSend & {
      * the message was sent.
      */
     time: number;
+    message_type: MessageType;
 };
 
 export type UserInfo = {

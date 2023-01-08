@@ -1,5 +1,5 @@
 import { Box, Text } from 'grommet';
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { UserWorker, User } from 'grommet-icons';
 
 import type { ReceivedMessage } from '../../types';
@@ -9,7 +9,7 @@ type MessageProps = {
     messageData: ReceivedMessage;
 };
 
-export const Message = ({ me, messageData }: MessageProps) => {
+const Message = ({ me, messageData }: MessageProps) => {
     const timeStamp = useMemo(() => {
         // The browser's default locale is used when undefined is passed in.
         const formatter = new Intl.DateTimeFormat(undefined, {
@@ -30,7 +30,7 @@ export const Message = ({ me, messageData }: MessageProps) => {
             elevation='small'
             height='fit-content'
             round='xsmall'
-            width={{ width: 'auto', max: '85%' }}
+            width={{ width: 'auto', max: '85%', min: '25%' }}
             overflow='hidden'>
             <Box background={me ? '#242424' : 'white'} direction='row' align='center' pad='xxsmall' gap='medium'>
                 <Box direction='row' align='center' gap='5px'>
@@ -45,3 +45,5 @@ export const Message = ({ me, messageData }: MessageProps) => {
         </Box>
     );
 };
+
+export default memo(Message);
