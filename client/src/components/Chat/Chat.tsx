@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
-import { Card, CardBody, CardFooter, TextArea, CardHeader, Box, Button, Text, Spinner } from 'grommet';
+import { Card, CardBody, CardFooter, TextArea, CardHeader, Box, Button, Text, Spinner, Clock } from 'grommet';
 import { LinkPrevious } from 'grommet-icons';
+import { toast } from 'react-hot-toast';
 import { Message } from './Message';
 
 import type { ChangeEventHandler, KeyboardEventHandler } from 'react';
@@ -18,14 +19,17 @@ export const Chat = ({ onExit }: ChatProps) => {
     const [messages, setMessages] = useState<ReceivedMessage[]>([]);
     const chatBoxRef = useRef<HTMLDivElement>(null);
 
-    // ! This shit is not working 100%. Gotta use MutationObserver
-    if (chatBoxRef.current) {
-        chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
-    }
-
     const changeHandler: ChangeEventHandler<HTMLTextAreaElement> = useCallback((e) => {
         setMessage(e.target.value);
     }, []);
+
+    // Scrolls the chat down when a message is received. Works because useEffect is run after the
+    // DOM is painted based on results from
+    useEffect(() => {
+        if (chatBoxRef.current) {
+            chatBoxRef.current.scroll({ top: chatBoxRef.current.scrollHeight, behavior: 'smooth' });
+        }
+    }, [messages]);
 
     useEffect(() => {
         // If any of the values are for some reason falsy (empty string or
@@ -72,19 +76,25 @@ export const Chat = ({ onExit }: ChatProps) => {
             if (message.length < +minLength) return;
 
             (async () => {
-                await fetch(`http://localhost:3001/messages/${userInfo.room}`, {
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    method: 'POST',
-                    body: JSON.stringify({
-                        sender_id: userInfo.id,
-                        sender: userInfo.name,
-                        message,
-                    } satisfies MessageToSend),
-                });
+                try {
+                    const promise = fetch(`http://localhost:3001/messages/${userInfo.room}`, {
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        method: 'POST',
+                        body: JSON.stringify({
+                            sender_id: userInfo.id,
+                            sender: userInfo.name,
+                            message,
+                        } satisfies MessageToSend),
+                    });
 
-                setMessage('');
+                    setMessage('');
+
+                    await promise;
+                } catch (error) {
+                    toast.error('Failed to send message!');
+                }
             })();
         },
         [message, userInfo]
@@ -104,7 +114,9 @@ export const Chat = ({ onExit }: ChatProps) => {
                     <Text weight='bold'>Current room:</Text>
                     <Text>{userInfo.room}</Text>
                 </Box>
-                <Box direction='row' width='20%' background='green'></Box>
+                <Box direction='row' width='20%'>
+                    <Clock size='xsmall' precision='minutes' type='digital' hourLimit={12} />
+                </Box>
             </CardHeader>
             <CardBody flex width='100%' height='80%' justify='center' align='center'>
                 {connecting ? (
@@ -135,7 +147,7 @@ export const Chat = ({ onExit }: ChatProps) => {
                     name='message'
                     placeholder='type something...'
                     resize={false}
-                    minLength={3}
+                    minLength={1}
                 />
             </CardFooter>
         </Card>
