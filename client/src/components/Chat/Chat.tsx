@@ -49,26 +49,11 @@ export const Chat = ({ onExit }: ChatProps) => {
         const handleMessage = (e: MessageEvent<string>) => {
             const data = JSON.parse(e.data) as ReceivedMessage;
 
-            switch (data.message_type) {
-                case MessageType.Message: {
-                    setMessages((prev) => {
-                        // ! Later on, limit the max size of the message list to be
-                        // ! only 50 messages!
-                        return [...prev, data];
-                    });
-                    break;
-                }
-                case MessageType.UserLeave:
-                case MessageType.UserJoin: {
-                    console.log(data);
-                    setMessages((prev) => {
-                        // ! Later on, limit the max size of the message list to be
-                        // ! only 50 messages!
-                        return [...prev, data];
-                    });
-                    break;
-                }
-            }
+            setMessages((prev) => {
+                // ! Later on, limit the max size of the message list to be
+                // ! only 50 messages!
+                return [...prev, data];
+            });
         };
         stream.addEventListener('message', handleMessage);
 
@@ -119,7 +104,7 @@ export const Chat = ({ onExit }: ChatProps) => {
         <Card
             elevation='xlarge'
             background='grey'
-            width='clamp(200px, 75vw, 750px)'
+            width='clamp(200px, 90vw, 500px)'
             height={{ height: 'medium', min: 'small', max: 'medium' }}>
             <CardHeader flex justify='center' align='center' height={{ max: '50px' }}>
                 <Box direction='row' width='20%'>
@@ -157,7 +142,6 @@ export const Chat = ({ onExit }: ChatProps) => {
                                         />
                                     );
                                 case MessageType.UserJoin:
-                                case MessageType.UserLeave:
                                     return <UserEvent key={`${msg.sender_id}-join-${msg.time}`} messageData={msg} />;
                             }
                         })}
@@ -177,6 +161,7 @@ export const Chat = ({ onExit }: ChatProps) => {
                     placeholder='type something...'
                     resize={false}
                     minLength={1}
+                    maxLength={100}
                 />
             </CardFooter>
         </Card>
