@@ -8,6 +8,7 @@ import { MessageType } from '../../constants';
 
 import type { ChangeEventHandler, KeyboardEventHandler } from 'react';
 import type { MessageToSend, ReceivedMessage, UserInfo } from '../../types';
+import { UserEvent } from './UserEvent';
 
 type ChatProps = {
     onExit(): void;
@@ -58,8 +59,12 @@ export const Chat = ({ onExit }: ChatProps) => {
                     break;
                 }
                 case MessageType.UserJoin: {
-                    console.log('success');
                     console.log(data);
+                    setMessages((prev) => {
+                        // ! Later on, limit the max size of the message list to be
+                        // ! only 50 messages!
+                        return [...prev, data];
+                    });
                     break;
                 }
             }
@@ -137,9 +142,25 @@ export const Chat = ({ onExit }: ChatProps) => {
                         width='100%'
                         overflow={{ horizontal: 'hidden', vertical: 'scroll' }}
                         pad='medium'
-                        gap='medium'>
+                        gap='small'>
                         {messages.map((msg) => {
-                            return <Message messageData={msg} me={msg.sender_id === userInfo.id} key={`${msg.sender_id}-${msg.time}`} />;
+                            switch (msg.message_type) {
+                                default:
+                                    return;
+                                case MessageType.Message:
+                                    console.log('running message');
+                                    return (
+                                        <Message
+                                            messageData={msg}
+                                            me={msg.sender_id === userInfo.id}
+                                            key={`${msg.sender_id}-${msg.time}`}
+                                        />
+                                    );
+                                case MessageType.UserJoin:
+                                case MessageType.UserLeave:
+                                    console.log('running userEvent');
+                                    return <UserEvent key={`${msg.sender_id}-join-${msg.time}`} messageData={msg} />;
+                            }
                         })}
                     </Box>
                 )}

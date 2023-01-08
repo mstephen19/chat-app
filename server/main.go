@@ -70,6 +70,7 @@ func main() {
 			Type:     UserJoinEvent,
 			SenderId: userId,
 			Sender:   userName,
+			Time:     time.Now().UnixMilli(),
 		})
 		if err != nil {
 			ctx.SecureJSON(http.StatusInternalServerError, JsonMessage{
