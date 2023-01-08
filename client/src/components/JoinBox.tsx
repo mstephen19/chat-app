@@ -1,10 +1,13 @@
-import { useCallback, KeyboardEventHandler } from 'react';
-import { Form, Box, FormField, TextInput, Button, FormExtendedEvent } from 'grommet';
+import { useCallback } from 'react';
+import { Form, Box, FormField, TextInput, Button } from 'grommet';
 import { User, Login, Edit } from 'grommet-icons';
 import { useSelector, useDispatch } from 'react-redux';
 import { nanoid } from 'nanoid';
-import type { UserInfo } from '../types';
 import { set } from '../redux/userInfo';
+
+import type { FormExtendedEvent } from 'grommet';
+import type { KeyboardEventHandler } from 'react';
+import type { UserInfo } from '../types';
 
 type JoinFormValues = Omit<UserInfo, 'id'>;
 
@@ -24,7 +27,7 @@ export const JoinBox = ({ onSubmit }: JoinBoxProps) => {
     // Set the values when they're changed within the form
     const handleChange: (values: JoinFormValues) => void = useCallback(({ name, room }) => {
         // setValues({ name: name ?? '', room: room ?? '' });
-        dispatch(set({ name: name ?? '', room: room ?? '' }));
+        dispatch(set({ name: name ?? '', room: room?.toLowerCase() ?? '' }));
     }, []);
 
     const handleSubmit = useCallback((e: FormExtendedEvent<JoinFormValues>) => {

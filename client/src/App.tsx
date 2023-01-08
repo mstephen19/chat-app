@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { Header, Main, Text } from 'grommet';
 import { Chat as ChatIcon } from 'grommet-icons';
-import { Chat } from './components/Chat';
-
+import { Chat } from './components/Chat/Chat';
 import { JoinBox } from './components/JoinBox';
 
 function App() {
@@ -16,8 +15,8 @@ function App() {
                     Chat app
                 </Text>
             </Header>
-            <Main pad='xlarge' flex width='100vw' align='center' justify='center'>
-                {!joined ? <JoinBox onSubmit={() => setJoined(true)} /> : <Chat onExit={() => {}} />}
+            <Main pad='medium' flex width='100vw' align='center'>
+                {!joined ? <JoinBox onSubmit={() => setJoined(true)} /> : <Chat onExit={() => setJoined(false)} />}
             </Main>
         </>
     );
