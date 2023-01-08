@@ -23,9 +23,11 @@ services:
         build:
             context: './client'
         ports:
-            - '3000:3000'
+            - '3000:5173'
         volumes:
-            - './client/pages:/app/pages:ro'
+            - './client/src:/app/src:ro'
             - '/app/node_modules'
         depends_on:
             - server
+        stdin_open: true
+        tty: true

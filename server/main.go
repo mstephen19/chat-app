@@ -15,8 +15,10 @@ import (
 )
 
 type Message struct {
-	Message string `json:"message"`
-	Time    int64  `json:"time"`
+	SenderId string `json:"sender_id"`
+	Sender   string `json:"sender"`
+	Message  string `json:"message"`
+	Time     int64  `json:"time"`
 }
 
 type JsonMessage struct {
@@ -53,10 +55,6 @@ func main() {
 			select {
 			// Client disconnected? End stream and unsubscribe.
 			case <-ctx.Request.Context().Done():
-				// ? does this unsubscribe the entire redis.Client from the roomID events,
-				// ? or just the PubSub? Test this!!!! Log out when unsubscriptions happen,
-				// ? then see if all clients get disconnected or just the subscriber as
-				// ? intended.
 				subscriber.Unsubscribe(context.TODO(), roomId)
 				return false
 			case message, ok := <-subscriber.Channel():
@@ -86,13 +84,13 @@ func main() {
 		data, err := io.ReadAll(ctx.Request.Body)
 		if err != nil {
 			ctx.SecureJSON(http.StatusBadRequest, JsonMessage{
-				Message: "Invalid request body",
+				Message: "Invalid request body.",
 			})
 			return
 		}
 		message := &Message{}
 		err = json.Unmarshal(data, message)
-		if err != nil || message.Message == "" {
+		if err != nil || message.Message == "" || message.Sender == "" || message.SenderId == "" {
 			ctx.SecureJSON(http.StatusBadRequest, JsonMessage{
 				Message: "Invalid request body.",
 			})

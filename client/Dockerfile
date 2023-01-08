@@ -8,6 +8,7 @@ RUN yarn install
 
 COPY . /app/
 
-EXPOSE 3000
+EXPOSE 5173
 
-CMD ["yarn", "dev"]
+# Dev server only works in Docker if we do this
+CMD ["yarn", "dev", "--", "--host", "0.0.0.0"]
