@@ -9,7 +9,14 @@ type MessageProps = {
 
 export const Message = ({ me, messageData }: MessageProps) => {
     return (
-        <Box flex={{ shrink: 0 }} alignSelf={!me ? 'start' : 'end'} direction='row' background='green' height='fit-content'>
+        <Box
+            flex={{ shrink: 0 }}
+            alignSelf={!me ? 'start' : 'end'}
+            direction='row'
+            background={!me ? '#242424' : 'white'}
+            elevation='medium'
+            height='fit-content'
+            round='xsmall'>
             <Text>
                 {messageData.sender}: {messageData.message}
             </Text>

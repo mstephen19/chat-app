@@ -1,10 +1,10 @@
-import { useState, useCallback, useEffect, KeyboardEventHandler } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
-import { Card, CardBody, CardFooter, TextArea, CardHeader, Box, Button, Text } from 'grommet';
+import { Card, CardBody, CardFooter, TextArea, CardHeader, Box, Button, Text, Spinner } from 'grommet';
 import { LinkPrevious } from 'grommet-icons';
 import { Message } from './Message';
 
-import type { ChangeEventHandler } from 'react';
+import type { ChangeEventHandler, KeyboardEventHandler } from 'react';
 import type { MessageToSend, ReceivedMessage, UserInfo } from '../../types';
 
 type ChatProps = {
@@ -16,6 +16,12 @@ export const Chat = ({ onExit }: ChatProps) => {
     const [message, setMessage] = useState('');
     const [connecting, setConnecting] = useState(true);
     const [messages, setMessages] = useState<ReceivedMessage[]>([]);
+    const chatBoxRef = useRef<HTMLDivElement>(null);
+
+    // ! This shit is not working 100%. Gotta use MutationObserver
+    if (chatBoxRef.current) {
+        chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
+    }
 
     const changeHandler: ChangeEventHandler<HTMLTextAreaElement> = useCallback((e) => {
         setMessage(e.target.value);
@@ -100,16 +106,22 @@ export const Chat = ({ onExit }: ChatProps) => {
                 </Box>
                 <Box direction='row' width='20%' background='green'></Box>
             </CardHeader>
-            <CardBody
-                flex
-                width='100%'
-                height='80%'
-                direction='column'
-                gap='medium'
-                overflow={{ horizontal: 'hidden', vertical: 'scroll' }}>
-                {messages.map((msg) => {
-                    return <Message messageData={msg} me={msg.sender_id === userInfo.id} key={`${msg.sender_id}-${msg.time}`} />;
-                })}
+            <CardBody flex width='100%' height='80%' justify='center' align='center'>
+                {connecting ? (
+                    <Spinner size='medium' />
+                ) : (
+                    <Box
+                        ref={chatBoxRef}
+                        height='100%'
+                        width='100%'
+                        overflow={{ horizontal: 'hidden', vertical: 'scroll' }}
+                        pad='medium'
+                        gap='medium'>
+                        {messages.map((msg) => {
+                            return <Message messageData={msg} me={msg.sender_id === userInfo.id} key={`${msg.sender_id}-${msg.time}`} />;
+                        })}
+                    </Box>
+                )}
             </CardBody>
             <CardFooter height={{ min: '75px' }} pad='medium'>
                 <TextArea
