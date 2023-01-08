@@ -92,11 +92,27 @@ func main() {
 			// Client disconnected? End stream and unsubscribe.
 			case <-ctx.Request.Context().Done():
 				subscriber.Unsubscribe(context.TODO(), roomId)
+				// ! This isn't working
+				leaveEvent, _ := json.Marshal(Message{
+					Type:     UserLeaveEvent,
+					SenderId: userId,
+					Sender:   userName,
+					Time:     time.Now().UnixMilli(),
+				})
+				ctx.SSEvent("message", leaveEvent)
 				return false
 			case message, ok := <-subscriber.Channel():
 				// Channel closes, end stream and unsubscribe.
 				if !ok {
 					subscriber.Unsubscribe(context.TODO(), roomId)
+					// ! This isn't working
+					leaveEvent, _ := json.Marshal(Message{
+						Type:     UserLeaveEvent,
+						SenderId: userId,
+						Sender:   userName,
+						Time:     time.Now().UnixMilli(),
+					})
+					ctx.SSEvent("message", leaveEvent)
 					return false
 				}
 

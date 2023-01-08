@@ -58,6 +58,7 @@ export const Chat = ({ onExit }: ChatProps) => {
                     });
                     break;
                 }
+                case MessageType.UserLeave:
                 case MessageType.UserJoin: {
                     console.log(data);
                     setMessages((prev) => {
@@ -148,7 +149,6 @@ export const Chat = ({ onExit }: ChatProps) => {
                                 default:
                                     return;
                                 case MessageType.Message:
-                                    console.log('running message');
                                     return (
                                         <Message
                                             messageData={msg}
@@ -158,7 +158,6 @@ export const Chat = ({ onExit }: ChatProps) => {
                                     );
                                 case MessageType.UserJoin:
                                 case MessageType.UserLeave:
-                                    console.log('running userEvent');
                                     return <UserEvent key={`${msg.sender_id}-join-${msg.time}`} messageData={msg} />;
                             }
                         })}
