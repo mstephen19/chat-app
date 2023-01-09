@@ -32,7 +32,7 @@ const Message = ({ me, messageData }: MessageProps) => {
             round='xsmall'
             width={{ width: 'auto', max: '85%', min: '25%' }}
             overflow='hidden'>
-            <Box background={me ? '#242424' : 'white'} direction='row' justify='between' pad='xxsmall' gap='medium'>
+            <Box background={me ? '#242424' : 'white'} direction='row' align='center' justify='between' pad='xxsmall' gap='medium'>
                 <Box direction='row' align='center' gap='5px'>
                     {me ? <UserWorker color='white' size='small' /> : <User color='#242424' size='small' />}
                     <Text size='xsmall'>{messageData.sender}</Text>

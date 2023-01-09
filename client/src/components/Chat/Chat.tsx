@@ -16,14 +16,9 @@ type ChatProps = {
 
 export const Chat = ({ onExit }: ChatProps) => {
     const userInfo = useSelector<{ userInfo: UserInfo }, UserInfo>((state) => state.userInfo);
-    const [message, setMessage] = useState('');
     const [connecting, setConnecting] = useState(true);
     const [messages, setMessages] = useState<ReceivedMessage[]>([]);
     const chatBoxRef = useRef<HTMLDivElement>(null);
-
-    const changeHandler: ChangeEventHandler<HTMLTextAreaElement> = useCallback((e) => {
-        setMessage(e.target.value);
-    }, []);
 
     // Scrolls the chat down when a message is received. Works because useEffect is run after the
     // DOM is painted based on results from
@@ -74,8 +69,9 @@ export const Chat = ({ onExit }: ChatProps) => {
             if (e.code !== 'Enter' || e.shiftKey) return;
             e.preventDefault();
 
-            const { minLength } = e.currentTarget as HTMLTextAreaElement;
-            if (message.length < +minLength) return;
+            const { minLength, value } = e.currentTarget as HTMLTextAreaElement;
+            const trimmedValue = value.trim();
+            if (trimmedValue.length < +minLength) return;
 
             (async () => {
                 try {
@@ -88,11 +84,11 @@ export const Chat = ({ onExit }: ChatProps) => {
                         body: JSON.stringify({
                             sender_id: userInfo.id,
                             sender: userInfo.name,
-                            message,
+                            message: trimmedValue,
                         } satisfies MessageToSend),
                     });
 
-                    setMessage('');
+                    e.currentTarget.value = '';
 
                     await promise;
                 } catch (error) {
@@ -100,7 +96,7 @@ export const Chat = ({ onExit }: ChatProps) => {
                 }
             })();
         },
-        [message, userInfo]
+        [userInfo]
     );
 
     return (
@@ -156,13 +152,11 @@ export const Chat = ({ onExit }: ChatProps) => {
                 <TextArea
                     autoFocus
                     onKeyDown={handleSend}
-                    value={message}
-                    onChange={changeHandler}
                     color='white'
                     size='small'
                     id='input-message'
                     name='message'
-                    placeholder='type something...'
+                    placeholder={'type something...'}
                     resize={false}
                     minLength={1}
                     maxLength={100}
