@@ -38,7 +38,9 @@ export const Chat = ({ onExit }: ChatProps) => {
         // null/undefined somehow), immediately exit the chat.
         if (Object.values(userInfo).some((val) => !val)) return onExit();
 
-        const stream = new EventSource(`http://localhost:3001/rooms/${userInfo.room}?user_id=${userInfo.id}&user_name=${userInfo.name}`);
+        const stream = new EventSource(`http://localhost:3001/rooms/${userInfo.room}?user_id=${userInfo.id}&user_name=${userInfo.name}`, {
+            withCredentials: true,
+        });
 
         const handleOpen = () => {
             setConnecting(false);
@@ -50,8 +52,8 @@ export const Chat = ({ onExit }: ChatProps) => {
             const data = JSON.parse(e.data) as ReceivedMessage;
 
             setMessages((prev) => {
-                // ! Later on, limit the max size of the message list to be
-                // ! only 50 messages!
+                // Prevent the more than 100 messages from being rendered at a time.
+                if (prev.length >= 100) prev.splice(99);
                 return [...prev, data];
             });
         };
@@ -82,6 +84,7 @@ export const Chat = ({ onExit }: ChatProps) => {
                             'Content-Type': 'application/json',
                         },
                         method: 'POST',
+                        credentials: 'include',
                         body: JSON.stringify({
                             sender_id: userInfo.id,
                             sender: userInfo.name,

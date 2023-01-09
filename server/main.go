@@ -38,7 +38,13 @@ func main() {
 	}
 
 	router := gin.Default()
-	router.Use(cors.Default())
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:           []string{"http://localhost:3000"},
+		AllowCredentials:       true,
+		AllowHeaders:           []string{"Content-Type"},
+		AllowBrowserExtensions: true,
+		AllowWildcard:          true,
+	}))
 
 	router.GET("/rooms/:id", utils.PrepareSSE, func(ctx *gin.Context) {
 		// Grab the room ID from the params to be used later.
@@ -61,9 +67,18 @@ func main() {
 			return
 		}
 
-		// ! Generate a JWT for the userId, the userName, and the
-		// ! current room name. Then, send a cookie back to the
-		// ! client.
+		// Generate a session token based on the room ID.
+		token, err := utils.NewSessionToken(roomId)
+		if err != nil {
+			ctx.SecureJSON(http.StatusInternalServerError, JsonMessage{
+				Message: "Failed to connect.",
+			})
+			return
+		}
+
+		// Set the sessionID cookie, then respond back to the client
+		ctx.SetCookie("session_id", token, 14400, "/", "", true, true)
+		ctx.Writer.Flush()
 
 		joinEvent, err := json.Marshal(Message{
 			Type:     UserJoinEvent,
@@ -115,9 +130,21 @@ func main() {
 			return
 		}
 
-		// ! Check the JWT sent within the cookie. If it is not present, or
-		// ! if the roomId is not equal to that of the one in the parameters,
-		// ! send back a 404 error.
+		// Check the session cookie to see if the roomId is a match or not.
+		sessionIdCookie, err := ctx.Request.Cookie("session_id")
+		if err != nil {
+			ctx.SecureJSON(http.StatusBadRequest, JsonMessage{
+				Message: "Room ID not found.",
+			})
+			return
+		}
+		decodedRoomId, err := utils.DecodeSessionToken(sessionIdCookie.Value)
+		if err != nil || decodedRoomId != roomId {
+			ctx.SecureJSON(http.StatusBadRequest, JsonMessage{
+				Message: "Not authorized to send messages in the specified room.",
+			})
+			return
+		}
 
 		data, err := io.ReadAll(ctx.Request.Body)
 		if err != nil {
@@ -144,7 +171,6 @@ func main() {
 			})
 			return
 		}
-		fmt.Println(string(encoded))
 
 		redisClient.Publish(context.TODO(), roomId, encoded)
 

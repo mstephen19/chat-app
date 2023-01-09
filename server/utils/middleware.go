@@ -13,10 +13,7 @@ func PrepareSSE(ctx *gin.Context) {
 	ctx.Header("Cache-Control", "no-cache")
 	ctx.Header("Connection", "keep-alive")
 	ctx.Header("Transfer-Encoding", "chunked")
-	ctx.Header("Access-Control-Allow-Origin", "*")
 
-	// Immediately send these headers to the client
-	ctx.Writer.Flush()
 	ctx.Next()
 }
 
