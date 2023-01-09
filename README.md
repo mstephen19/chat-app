@@ -10,6 +10,8 @@ A basic session ID system is in place using JWT to ensure that users can only se
 
 Currently, there is only a configuration to run the little app in development mode.
 
+The secret key for JWT should be stored in a `.env` file within the `server` folder under the name `JWT_SECRET_KEY`. If the key is not provided, then `env-var-not-found` will be used as a fallback key. The environment variable can also be provide by modifying the `docker-compose.yml` file.
+
 Start your Docker daemon and run the following command while navigated to the project's directory:
 
 ```shell
