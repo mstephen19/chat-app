@@ -53,7 +53,7 @@ export const Chat = ({ onExit }: ChatProps) => {
 
             setMessages((prev) => {
                 // Prevent the more than 100 messages from being rendered at a time.
-                if (prev.length >= 100) prev.splice(99);
+                if (prev.length === 100) prev.shift();
                 return [...prev, data];
             });
         };

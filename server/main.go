@@ -67,16 +67,6 @@ func main() {
 			})
 			return
 		}
-		defer func() {
-			leaveEvent, _ := json.Marshal(Message{
-				Type:     UserLeaveEvent,
-				SenderId: userId,
-				Sender:   userName,
-				Time:     time.Now().UnixMilli(),
-			})
-
-			redisClient.Publish(context.TODO(), roomId, leaveEvent)
-		}()
 
 		// Generate a session token based on the room ID.
 		token, err := utils.NewSessionToken(roomId)
@@ -91,6 +81,7 @@ func main() {
 		ctx.SetCookie("session_id", token, 14400, "/", "", true, true)
 		ctx.Writer.Flush()
 
+		// Send a notification that the user has joined the chat
 		joinEvent, err := json.Marshal(Message{
 			Type:     UserJoinEvent,
 			SenderId: userId,
@@ -104,6 +95,18 @@ func main() {
 			return
 		}
 		redisClient.Publish(context.TODO(), roomId, joinEvent)
+		// Once the request has completed, send a notification that the user
+		// has left the chat.
+		defer func() {
+			leaveEvent, _ := json.Marshal(Message{
+				Type:     UserLeaveEvent,
+				SenderId: userId,
+				Sender:   userName,
+				Time:     time.Now().UnixMilli(),
+			})
+
+			redisClient.Publish(context.TODO(), roomId, leaveEvent)
+		}()
 
 		// Subscribe to the Redis channel for the room's messages
 		subscriber := redisClient.Subscribe(context.TODO(), roomId)
