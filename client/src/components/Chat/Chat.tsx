@@ -123,7 +123,7 @@ export const Chat = ({ onExit }: ChatProps) => {
             </CardHeader>
             <CardBody flex width='100%' height='80%' justify='center' align='center'>
                 {connecting ? (
-                    <Spinner size='medium' />
+                    <Spinner size='large' />
                 ) : (
                     <Box
                         ref={chatBoxRef}

@@ -8,6 +8,8 @@ services:
         container_name: 'server'
         build:
             context: './server'
+        env_file:
+            - './server/.env'
         ports:
             - '3001:3001'
         # The entire folder as a bind mount.
@@ -27,7 +29,7 @@ services:
         volumes:
             - './client/src:/app/src:ro'
             - '/app/node_modules'
-        depends_on:
-            - server
+        # depends_on:
+        #     - server
         stdin_open: true
         tty: true
