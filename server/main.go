@@ -77,24 +77,10 @@ func main() {
 			return
 		}
 
-		// Set the sessionID cookie, then respond back to the client
+		// Set the sessionID cookie, then finally respond back to the client.
 		ctx.SetCookie("session_id", token, 14400, "/", "", true, true)
 		ctx.Writer.Flush()
 
-		// Send a notification that the user has joined the chat
-		joinEvent, err := json.Marshal(Message{
-			Type:     UserJoinEvent,
-			SenderId: userId,
-			Sender:   userName,
-			Time:     time.Now().UnixMilli(),
-		})
-		if err != nil {
-			ctx.SecureJSON(http.StatusInternalServerError, JsonMessage{
-				Message: "Failed to connect.",
-			})
-			return
-		}
-		redisClient.Publish(context.TODO(), roomId, joinEvent)
 		// Once the request has completed, send a notification that the user
 		// has left the chat.
 		defer func() {
@@ -106,6 +92,22 @@ func main() {
 			})
 
 			redisClient.Publish(context.TODO(), roomId, leaveEvent)
+			// Decrement the number of users in the room.
+			// redisClient.Decr(context.TODO(), roomId)
+		}()
+		// Run the joining logic as a goroutine as to not block the subscribing
+		// to the stream.
+		go func() {
+			// Send a notification that the user has joined the chat
+			joinEvent, _ := json.Marshal(Message{
+				Type:     UserJoinEvent,
+				SenderId: userId,
+				Sender:   userName,
+				Time:     time.Now().UnixMilli(),
+			})
+			redisClient.Publish(context.TODO(), roomId, joinEvent)
+			// Increment the number of users in the room.
+			// redisClient.Incr(context.TODO(), roomId)
 		}()
 
 		// Subscribe to the Redis channel for the room's messages

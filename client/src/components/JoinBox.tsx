@@ -8,6 +8,7 @@ import { set } from '../redux/userInfo';
 import type { FormExtendedEvent } from 'grommet';
 import type { KeyboardEventHandler } from 'react';
 import type { UserInfo } from '../types';
+import { FIELD_REGEX } from '../constants';
 
 type JoinFormValues = Omit<UserInfo, 'id'>;
 
@@ -26,8 +27,7 @@ export const JoinBox = ({ onSubmit }: JoinBoxProps) => {
 
     // Set the values when they're changed within the form
     const handleChange: (values: JoinFormValues) => void = useCallback(({ name, room }) => {
-        // setValues({ name: name ?? '', room: room ?? '' });
-        dispatch(set({ name: name ?? '', room: room?.toLowerCase() ?? '' }));
+        dispatch(set({ name: name.replace(FIELD_REGEX, '') ?? '', room: room?.replace(FIELD_REGEX, '') ?? '' }));
     }, []);
 
     const handleSubmit = useCallback((e: FormExtendedEvent<JoinFormValues>) => {
@@ -41,11 +41,18 @@ export const JoinBox = ({ onSubmit }: JoinBoxProps) => {
     return (
         <Box elevation='medium' background='grey' round='small' pad='medium'>
             <Form value={userInfo} onChange={handleChange} onSubmit={handleSubmit}>
-                <FormField name='name' htmlFor='input-name' label='Nickname' maxLength={10}>
-                    <TextInput id='input-name' name='name' placeholder='John42' icon={<User />} onKeyDown={preventSpaces} />
+                <FormField name='name' htmlFor='input-name' label='Nickname'>
+                    <TextInput id='input-name' name='name' placeholder='John42' icon={<User />} onKeyDown={preventSpaces} maxLength={15} />
                 </FormField>
-                <FormField name='room' htmlFor='input-room' label='Room name' maxLength={25}>
-                    <TextInput id='input-room' name='room' placeholder='lilys-cool-room' icon={<Edit />} onKeyDown={preventSpaces} />
+                <FormField name='room' htmlFor='input-room' label='Room name'>
+                    <TextInput
+                        id='input-room'
+                        name='room'
+                        placeholder='lilys-cool-room'
+                        icon={<Edit />}
+                        onKeyDown={preventSpaces}
+                        maxLength={25}
+                    />
                 </FormField>
                 <Box flex justify='center' pad='small'>
                     <Button type='submit' label='Join' icon={<Login />} disabled={!userInfo.name || !userInfo.room} />
