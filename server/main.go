@@ -61,6 +61,10 @@ func main() {
 			return
 		}
 
+		// ! Generate a JWT for the userId, the userName, and the
+		// ! current room name. Then, send a cookie back to the
+		// ! client.
+
 		joinEvent, err := json.Marshal(Message{
 			Type:     UserJoinEvent,
 			SenderId: userId,
@@ -110,6 +114,10 @@ func main() {
 			})
 			return
 		}
+
+		// ! Check the JWT sent within the cookie. If it is not present, or
+		// ! if the roomId is not equal to that of the one in the parameters,
+		// ! send back a 404 error.
 
 		data, err := io.ReadAll(ctx.Request.Body)
 		if err != nil {
