@@ -17,6 +17,8 @@ func PrepareSSE(ctx *gin.Context) {
 	ctx.Next()
 }
 
+// Prevent too large of request bodies from being processed.
+// Avoids buffer overload situations.
 func LimitBodySize(byteSize int64) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		ctx.Request.Body = http.MaxBytesReader(ctx.Writer, ctx.Request.Body, byteSize)

@@ -37,8 +37,28 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	// Enable Redis keyspace events
+	_, err = redisClient.Do(context.TODO(), "CONFIG", "SET", "notify-keyspace-events", "KEA").Result()
+	if err != nil {
+		panic(fmt.Sprintf("Unable to set keyspace events: %v\n", err.Error()))
+	}
+
+	// This logic needs to go in its own function later on
+	subscriber := redisClient.PSubscribe(context.TODO(), "__keyevent@0__:incrby")
+	go func() {
+		for {
+			select {
+			// Listen for events on the channel
+			case data := <-subscriber.Channel():
+				// The payload is the key which was changed
+				value := redisClient.Get(context.TODO(), data.Payload)
+				fmt.Println(value.Int64())
+			}
+		}
+	}()
 
 	router := gin.Default()
+	router.SetTrustedProxies(nil)
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:           []string{"http://localhost:3000"},
 		AllowCredentials:       true,
@@ -46,6 +66,11 @@ func main() {
 		AllowBrowserExtensions: true,
 		AllowWildcard:          true,
 	}))
+
+	// Later on, create this route, which will stream events to the client
+	// router.GET("/rooms", utils.PrepareSSE, func(ctx *gin.Context) {
+
+	// })
 
 	router.GET("/rooms/:id", utils.PrepareSSE, func(ctx *gin.Context) {
 		// Grab the room ID from the params to be used later.
@@ -93,7 +118,7 @@ func main() {
 
 			redisClient.Publish(context.TODO(), roomId, leaveEvent)
 			// Decrement the number of users in the room.
-			// redisClient.Decr(context.TODO(), roomId)
+			redisClient.Decr(context.TODO(), roomId)
 		}()
 		// Run the joining logic as a goroutine as to not block the subscribing
 		// to the stream.
@@ -107,7 +132,7 @@ func main() {
 			})
 			redisClient.Publish(context.TODO(), roomId, joinEvent)
 			// Increment the number of users in the room.
-			// redisClient.Incr(context.TODO(), roomId)
+			redisClient.Incr(context.TODO(), roomId)
 		}()
 
 		// Subscribe to the Redis channel for the room's messages
@@ -136,12 +161,12 @@ func main() {
 		})
 	})
 
-	router.POST("/messages/:id", utils.LimitBodySize(1024*2), func(ctx *gin.Context) {
-		// Get the room ID the message should be posted to
+	router.POST("/messages/:id", utils.LimitBodySize(1024), func(ctx *gin.Context) {
+		// Get the room ID the message should be posted to.
 		roomId, exists := ctx.Params.Get("id")
 		if !exists {
 			ctx.SecureJSON(http.StatusBadRequest, JsonMessage{
-				Message: "Room ID not found.",
+				Message: "Invalid room ID.",
 			})
 			return
 		}
@@ -150,22 +175,32 @@ func main() {
 		sessionIdCookie, err := ctx.Request.Cookie("session_id")
 		if err != nil {
 			ctx.SecureJSON(http.StatusBadRequest, JsonMessage{
-				Message: "Room ID not found.",
+				Message: "No session found.",
 			})
 			return
 		}
+		// Ensure the roomId they are trying to send the message to matches that
+		// of the one in their session token.
 		decodedRoomId, err := utils.DecodeSessionToken(sessionIdCookie.Value)
 		if err != nil || decodedRoomId != roomId {
 			ctx.SecureJSON(http.StatusBadRequest, JsonMessage{
-				Message: "Not authorized to send messages in the specified room.",
+				Message: "Not authorized to send messages in this room.",
 			})
 			return
 		}
 
 		data, err := io.ReadAll(ctx.Request.Body)
 		if err != nil {
-			ctx.SecureJSON(http.StatusBadRequest, JsonMessage{
-				Message: "Invalid request body.",
+			// Handle cases where someone tried to send a massive message to the server.
+			// The error will be EOF when the body is massive.
+			if err == io.EOF {
+				ctx.SecureJSON(http.StatusBadRequest, JsonMessage{
+					Message: "Request body too large.",
+				})
+				return
+			}
+			ctx.SecureJSON(http.StatusInternalServerError, JsonMessage{
+				Message: "Failed to read request body.",
 			})
 			return
 		}

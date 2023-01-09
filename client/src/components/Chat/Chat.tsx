@@ -7,7 +7,7 @@ import { ChatHeader } from './ChatHeader';
 import { ChatBody } from './ChatBody';
 
 import type { KeyboardEventHandler } from 'react';
-import type { MessageToSend, ReceivedMessage, UserInfo } from '../../types';
+import type { JsonMessage, MessageToSend, ReceivedMessage, UserInfo } from '../../types';
 
 type ChatProps = {
     onExit(): void;
@@ -80,7 +80,11 @@ export const Chat = ({ onExit }: ChatProps) => {
 
                     e.currentTarget.value = '';
 
-                    await promise;
+                    const response = await promise;
+
+                    if (response.ok) return;
+                    const json: JsonMessage = await response.json();
+                    toast.error(json?.message ?? 'There was an error sending your message.');
                 } catch (error) {
                     toast.error('Failed to send message!');
                 }

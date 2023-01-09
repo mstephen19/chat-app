@@ -29,3 +29,7 @@ export type UserInfo = {
     name: string;
     room: string;
 };
+
+export type JsonMessage = {
+    message: string;
+};
