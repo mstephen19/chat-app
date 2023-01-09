@@ -6,10 +6,10 @@ type UserEventProps = {
     messageData: ReceivedMessage;
 };
 
-export const UserEvent = ({ messageData: { sender } }: UserEventProps) => {
+export const UserEvent = ({ messageData: { message_type, sender } }: UserEventProps) => {
     return (
         <Text alignSelf='center' size='small'>
-            {`${sender} joined the chat!`}
+            {`${sender} ${message_type === MessageType.UserJoin ? 'joined' : 'left'} the chat!`}
         </Text>
     );
 };

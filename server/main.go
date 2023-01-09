@@ -15,8 +15,9 @@ import (
 )
 
 const (
-	MessageEvent  = "message"
-	UserJoinEvent = "user_join"
+	MessageEvent   = "message"
+	UserJoinEvent  = "user_join"
+	UserLeaveEvent = "user_leave"
 )
 
 type Message struct {
@@ -66,6 +67,16 @@ func main() {
 			})
 			return
 		}
+		defer func() {
+			leaveEvent, _ := json.Marshal(Message{
+				Type:     UserLeaveEvent,
+				SenderId: userId,
+				Sender:   userName,
+				Time:     time.Now().UnixMilli(),
+			})
+
+			redisClient.Publish(context.TODO(), roomId, leaveEvent)
+		}()
 
 		// Generate a session token based on the room ID.
 		token, err := utils.NewSessionToken(roomId)

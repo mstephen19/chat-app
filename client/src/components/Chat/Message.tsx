@@ -40,7 +40,9 @@ const Message = ({ me, messageData }: MessageProps) => {
                 <Text size='xsmall'>{timeStamp}</Text>
             </Box>
             <Box pad='xsmall'>
-                <Text style={{ overflowWrap: 'break-word', maxWidth: '100%' }}>{messageData.message}</Text>
+                <Text style={{ overflowWrap: 'break-word', maxWidth: '100%' }} size='small'>
+                    {messageData.message}
+                </Text>
             </Box>
         </Box>
     );

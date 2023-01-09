@@ -144,6 +144,7 @@ export const Chat = ({ onExit }: ChatProps) => {
                                             key={`${msg.sender_id}-${msg.time}`}
                                         />
                                     );
+                                case MessageType.UserLeave:
                                 case MessageType.UserJoin:
                                     return <UserEvent key={`${msg.sender_id}-join-${msg.time}`} messageData={msg} />;
                             }
