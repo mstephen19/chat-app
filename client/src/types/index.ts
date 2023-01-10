@@ -38,3 +38,5 @@ export type RoomEvent = {
     room_id: string;
     user_count: number;
 };
+
+export type RoomMap = Record<string, number>;

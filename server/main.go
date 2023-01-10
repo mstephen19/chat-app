@@ -58,7 +58,8 @@ func main() {
 		AllowWildcard:          true,
 	}))
 
-	// Later on, create this route, which will stream events to the client
+	// Get updates on any rooms joined/left since the time connecting
+	// to the stream.
 	router.GET("/rooms", utils.PrepareSSE, func(ctx *gin.Context) {
 		// Respond back to the client immediately
 		ctx.Writer.Flush()
@@ -95,6 +96,7 @@ func main() {
 		})
 	})
 
+	// Join a room and start listening for messages in it.
 	router.GET("/rooms/:id", utils.PrepareSSE, func(ctx *gin.Context) {
 		// Grab the room ID from the params to be used later.
 		roomId, exists := ctx.Params.Get("id")
@@ -141,7 +143,15 @@ func main() {
 
 			redisClient.Publish(context.TODO(), roomId, leaveEvent)
 			// Decrement the number of users in the room.
-			redisClient.Decr(context.TODO(), roomId)
+			result, err := redisClient.Decr(context.TODO(), roomId).Result()
+			if err != nil {
+				return
+			}
+			// If the decremented count equals zero, just delete
+			// the key from the hash
+			if result == 0 {
+				redisClient.Del(context.TODO(), roomId)
+			}
 		}()
 		// Run the joining logic as a goroutine as to not block the subscribing
 		// to the stream.
@@ -184,6 +194,7 @@ func main() {
 		})
 	})
 
+	// Send messages to a room.
 	router.POST("/messages/:id", utils.LimitBodySize(1024), func(ctx *gin.Context) {
 		// Get the room ID the message should be posted to.
 		roomId, exists := ctx.Params.Get("id")

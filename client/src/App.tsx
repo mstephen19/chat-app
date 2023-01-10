@@ -2,7 +2,7 @@ import { useState, lazy, Suspense } from 'react';
 import { Header, Main, Text } from 'grommet';
 import { Chat as ChatIcon } from 'grommet-icons';
 import { JoinBox } from './components/JoinBox/JoinBox';
-import { RoomWatcher } from './components/RoomWatcher';
+import RoomWatcher from './components/RoomWatcher';
 
 const Chat = lazy(() => import('./components/Chat/Chat'));
 
