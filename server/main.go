@@ -20,6 +20,11 @@ const (
 	UserLeaveEvent = "user_leave"
 )
 
+type RoomEvent struct {
+	RoomId string `json:"room_id"`
+	Count  int64  `json:"user_count"`
+}
+
 type Message struct {
 	Type     string `json:"message_type"`
 	SenderId string `json:"sender_id"`
@@ -43,20 +48,6 @@ func main() {
 		panic(fmt.Sprintf("Unable to set keyspace events: %v\n", err.Error()))
 	}
 
-	// This logic needs to go in its own function later on
-	subscriber := redisClient.PSubscribe(context.TODO(), "__keyevent@0__:incrby")
-	go func() {
-		for {
-			select {
-			// Listen for events on the channel
-			case data := <-subscriber.Channel():
-				// The payload is the key which was changed
-				value := redisClient.Get(context.TODO(), data.Payload)
-				fmt.Println(value.Int64())
-			}
-		}
-	}()
-
 	router := gin.Default()
 	router.SetTrustedProxies(nil)
 	router.Use(cors.New(cors.Config{
@@ -68,9 +59,41 @@ func main() {
 	}))
 
 	// Later on, create this route, which will stream events to the client
-	// router.GET("/rooms", utils.PrepareSSE, func(ctx *gin.Context) {
+	router.GET("/rooms", utils.PrepareSSE, func(ctx *gin.Context) {
+		// Respond back to the client immediately
+		ctx.Writer.Flush()
 
-	// })
+		// Listen for changes on the Redis hash containing all the rooms and their
+		// user counts.
+		eventSubscriber := redisClient.PSubscribe(context.TODO(), "__keyevent@0__:incrby")
+
+		ctx.Stream(func(w io.Writer) bool {
+			select {
+			case <-ctx.Request.Context().Done():
+				return false
+			case msg, ok := <-eventSubscriber.Channel():
+				if !ok {
+					return false
+				}
+				cmd := redisClient.Get(context.TODO(), msg.Payload)
+				count, err := cmd.Int64()
+				if err != nil {
+					return false
+				}
+
+				encodedRoomEvent, err := json.Marshal(RoomEvent{
+					RoomId: msg.Payload,
+					Count:  count,
+				})
+				if err != nil {
+					return false
+				}
+
+				ctx.SSEvent("message", string(encodedRoomEvent))
+			}
+			return true
+		})
+	})
 
 	router.GET("/rooms/:id", utils.PrepareSSE, func(ctx *gin.Context) {
 		// Grab the room ID from the params to be used later.

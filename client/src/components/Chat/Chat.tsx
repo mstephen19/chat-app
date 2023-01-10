@@ -13,7 +13,7 @@ type ChatProps = {
     onExit(): void;
 };
 
-export const Chat = ({ onExit }: ChatProps) => {
+const Chat = ({ onExit }: ChatProps) => {
     const userInfo = useSelector<{ userInfo: UserInfo }, UserInfo>((state) => state.userInfo);
     const [connecting, setConnecting] = useState(true);
     const [messages, setMessages] = useState<ReceivedMessage[]>([]);
@@ -97,7 +97,7 @@ export const Chat = ({ onExit }: ChatProps) => {
         <Card
             elevation='xlarge'
             background='grey'
-            width='clamp(200px, 90vw, 500px)'
+            width={{ width: 'clamp(200px, 90vw, 500px)', min: '200px' }}
             height={{ height: 'medium', min: 'small', max: 'medium' }}>
             <ChatHeader room={userInfo.room} onExit={onExit} />
             <ChatBody messages={messages} userInfo={userInfo} connecting={connecting} />
@@ -105,3 +105,5 @@ export const Chat = ({ onExit }: ChatProps) => {
         </Card>
     );
 };
+
+export default Chat;

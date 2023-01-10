@@ -33,3 +33,8 @@ export type UserInfo = {
 export type JsonMessage = {
     message: string;
 };
+
+export type RoomEvent = {
+    room_id: string;
+    user_count: number;
+};

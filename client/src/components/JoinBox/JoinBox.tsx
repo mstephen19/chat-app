@@ -3,12 +3,12 @@ import { Form, Box, FormField, TextInput, Button } from 'grommet';
 import { User, Login, Edit } from 'grommet-icons';
 import { useSelector, useDispatch } from 'react-redux';
 import { nanoid } from 'nanoid';
-import { set } from '../redux/userInfo';
+import { set } from '../../redux/userInfo';
 
 import type { FormExtendedEvent } from 'grommet';
 import type { KeyboardEventHandler } from 'react';
-import type { UserInfo } from '../types';
-import { FIELD_REGEX } from '../constants';
+import type { UserInfo } from '../../types';
+import { FIELD_REGEX } from '../../constants';
 
 type JoinFormValues = Omit<UserInfo, 'id'>;
 
@@ -39,7 +39,7 @@ export const JoinBox = ({ onSubmit }: JoinBoxProps) => {
     }, []);
 
     return (
-        <Box elevation='medium' background='grey' round='small' pad='medium'>
+        <Box elevation='medium' background='grey' round='small' pad='medium' width={{ min: '200px' }}>
             <Form value={userInfo} onChange={handleChange} onSubmit={handleSubmit}>
                 <FormField name='name' htmlFor='input-name' label='Nickname'>
                     <TextInput id='input-name' name='name' placeholder='John42' icon={<User />} onKeyDown={preventSpaces} maxLength={15} />
