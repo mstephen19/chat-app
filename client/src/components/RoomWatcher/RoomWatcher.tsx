@@ -1,7 +1,13 @@
 import { memo, useEffect, useState } from 'react';
-import type { RoomEvent, RoomMap } from '../types';
+import { Box } from 'grommet';
+import type { RoomEvent, RoomMap } from '../../types';
+import RoomPreview from './RoomPreview';
 
-const RoomWatcher = () => {
+type RoomWatcherProps = {
+    onSubmit(): void;
+};
+
+const RoomWatcher = ({ onSubmit }: RoomWatcherProps) => {
     const [rooms, setRooms] = useState<RoomMap>({});
 
     useEffect(() => {
@@ -12,9 +18,9 @@ const RoomWatcher = () => {
         const messageHandler = ({ data }: MessageEvent<string>) => {
             const roomEvent = JSON.parse(data) as RoomEvent;
 
-            console.log(roomEvent);
-
             setRooms((prev) => {
+                if (roomEvent.user_count <= 0 && !(roomEvent.room_id in prev)) return prev;
+
                 // If the current amount of users in the room is zero, and
                 if (roomEvent.user_count <= 0 && roomEvent.room_id in prev) {
                     const { [roomEvent.room_id]: _, ...rest } = prev;
@@ -37,15 +43,17 @@ const RoomWatcher = () => {
     }, []);
 
     return (
-        <ul>
+        <Box
+            justify='center'
+            style={{ columnGap: '10px', rowGap: '10px', marginTop: '10px' }}
+            flex
+            wrap
+            direction='row'
+            width={{ max: '350px' }}>
             {Object.entries(rooms).map(([id, count]) => {
-                return (
-                    <li key={`${id}-status`}>
-                        {id}, {count}
-                    </li>
-                );
+                return <RoomPreview key={`${id}-status`} roomId={id} userCount={count} onSubmit={onSubmit} />;
             })}
-        </ul>
+        </Box>
     );
 };
 

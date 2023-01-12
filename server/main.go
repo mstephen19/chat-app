@@ -66,7 +66,7 @@ func main() {
 
 		// Listen for changes on the Redis hash containing all the rooms and their
 		// user counts.
-		eventSubscriber := redisClient.PSubscribe(context.TODO(), "__keyevent@0__:incrby")
+		eventSubscriber := redisClient.PSubscribe(context.TODO(), "__keyevent@0__:del", "__keyevent@0__:incrby", "__keyevent@0__:decrby")
 
 		ctx.Stream(func(w io.Writer) bool {
 			select {
@@ -78,8 +78,16 @@ func main() {
 				}
 				cmd := redisClient.Get(context.TODO(), msg.Payload)
 				count, err := cmd.Int64()
+				// If there was an error grabbing the value, that means it
+				// was decremented to zero and removed from the Redis hash.
 				if err != nil {
-					return false
+					closedRoomEvent, _ := json.Marshal(RoomEvent{
+						RoomId: msg.Payload,
+						Count:  0,
+					})
+
+					ctx.SSEvent("message", string(closedRoomEvent))
+					return true
 				}
 
 				encodedRoomEvent, err := json.Marshal(RoomEvent{

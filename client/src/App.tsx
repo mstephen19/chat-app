@@ -1,8 +1,8 @@
 import { useState, lazy, Suspense } from 'react';
-import { Header, Main, Text } from 'grommet';
+import { Header, Main, Text, Box } from 'grommet';
 import { Chat as ChatIcon } from 'grommet-icons';
 import { JoinBox } from './components/JoinBox/JoinBox';
-import RoomWatcher from './components/RoomWatcher';
+import RoomWatcher from './components/RoomWatcher/RoomWatcher';
 
 const Chat = lazy(() => import('./components/Chat/Chat'));
 
@@ -19,10 +19,10 @@ function App() {
             </Header>
             <Main pad='medium' flex width='100vw' align='center'>
                 {!joined ? (
-                    <>
+                    <Box>
                         <JoinBox onSubmit={() => setJoined(true)} />
-                        <RoomWatcher />
-                    </>
+                        <RoomWatcher onSubmit={() => setJoined(true)} />
+                    </Box>
                 ) : (
                     <Chat onExit={() => setJoined(false)} />
                 )}
